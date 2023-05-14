@@ -123,10 +123,19 @@ if [ ! -z "$subDir" ]; then
     # 如果 subDir 变量不为空，就说明 domainDir 下一级有包含 $DOMAIN 字眼的文件夹，就将 subDir 的基本名赋值给 domainDir 变量
 fi
 
+if [ "$(basename "$domainDir")" != "$DOMAIN" ]; then
+    error "Could not find any directory named '$DOMAIN'"
+    false
+    error "找不到任何命名为 '$DOMAIN' 的文件夹"
+    # 如果 domainDir 的基本名不等于 $DOMAIN ，就报错并退出，并输出中文错误信息
+fi
+
+
 if [ -d "$ccPath/$domainDir" ]; then
     warn "custom_components/$domainDir directory already exist, cleaning up..."
+    rm -R "$ccPath/$domainDir/*"
     rm -R "$ccPath/$domainDir"
-    # 如果 ccPath 目录下已经有 domainDir 目录，就输出警告信息，并删除该目录
+    # 如果 ccPath 目录下已经有 domainDir 目录，就输出警告信息，并删除该目录及其下面的所有文件和文件夹
 fi
 
 cp -rf "$tmpPath/$domainDir" "$ccPath"
