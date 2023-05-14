@@ -41,10 +41,6 @@ if [ "$DOMAIN" = "hacs" ]; then
   # 使用 releases 目录下的压缩包地址
 fi
 
-
-declare ccPath
-# 声明 ccPath 变量
-
 function info () {
   echo "INFO: $1"
 }
@@ -78,65 +74,70 @@ info "Archive URL: $ARCHIVE_URL"
 info "Trying to find the correct directory..."
 # 输出压缩包地址和寻找配置目录的信息
 
-
 ccPath="/usr/share/hassio/homeassistant/custom_components"
-# 直接指定 ccPath 的路径，而不用从 haPath 中拼接。
+# 将 ccPath 改为指定的地址
+
 if [ ! -d "$ccPath" ]; then
-  info "Creating custom_components directory..."
-  mkdir "$ccPath"
-  # 如果 ccPath 目录不存在，就创建它，并输出信息
+    info "Creating custom_components directory..."
+    mkdir "$ccPath"
+    # 如果 ccPath 目录不存在，就创建它，并输出信息
 fi
-info "Changing to the custom_components directory..."
-cd "$ccPath" || error "Could not change path to $ccPath"
-# 切换到 ccPath 目录下，如果失败就报错并退出，并输出信息
+
+tmpPath="/tmp/hatmp"
+# 定义一个 tmpPath 变量，存放临时文件夹的路径
+
+if [ ! -d "$tmpPath" ]; then
+    info "Creating temp directory..."
+    mkdir "$tmpPath"
+    # 如果 tmpPath 目录不存在，就创建它，并输出信息
+fi
+
+info "Changing to the temp directory..."
+cd "$tmpPath" || error "Could not change path to $tmpPath"
+# 切换到 tmpPath 目录下，如果失败就报错并退出，并输出信息
 info "Downloading..."
-wget -t 2 -O "$ccPath/$DOMAIN$ARCHIVE_TAG.zip" "$ARCHIVE_URL"
-# 使用 wget 命令下载压缩包到 ccPath 目录下，并重命名为 $DOMAIN$ARCHIVE_TAG.zip，并输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
-
-if [ -d "$ccPath/$DOMAIN" ]; then
-  warn "custom_components/$DOMAIN directory already exist, cleaning up..."
-  rm -R "$ccPath/$DOMAIN"
-  # 如果 ccPath 目录下已经有 DOMAIN 目录，就输出警告信息，并删除该目录
-fi
-
-ver=${ARCHIVE_TAG/#v/}
-# 去掉 ARCHIVE_TAG 中的 v 前缀，赋值给 ver 变量
-
-if [ ! -d "$ccPath/$REPO_NAME-$ver" ]; then
-  ver=$ARCHIVE_TAG
-  # 如果 ccPath 目录下没有 REPO_NAME-ver 目录，就将 ver 变量改为 ARCHIVE_TAG
-fi
+wget -t 2 -O "$tmpPath/$ARCHIVE_TAG.zip" "$ARCHIVE_URL"
+# 使用 wget 命令下载压缩包到 tmpPath 目录下，并重命名为 ARCHIVE_TAG.zip，并输出信息
 
 info "Unpacking..."
 # 输出解压缩的信息
 
-str="/releases/"
-# 定义一个 str 变量，存放 releases 字符串
+unzip -o "$tmpPath/$ARCHIVE_TAG.zip" -d "$tmpPath" >/dev/null 2>&1
+# 将压缩包解压到 tmpPath 目录下，并忽略输出信息
 
-if [ ${ARCHIVE_URL/${str}/} = $ARCHIVE_URL ]; then
-  unzip -o "$ccPath/$DOMAIN$ARCHIVE_TAG.zip" -d "$ccPath" >/dev/null 2>&1
-  # 如果 ARCHIVE_URL 中没有 str 字符串，就说明是从 archive 目录下载的压缩包，就直接解压到 ccPath 目录下，并忽略输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
-else
-  dir="$ccPath/$REPO_NAME-$ver/custom_components/$DOMAIN"
-  mkdir -p $dir
-  unzip -o "$ccPath/$DOMAIN$ARCHIVE_TAG.zip" -d $dir >/dev/null 2>&1
-  # 否则说明是从 releases 目录下载的压缩包，就先创建一个目录结构，然后解压到该目录下，并忽略输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
+domainDir=$(find . -type d -name "*$DOMAIN*" | head -n 1)
+# 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的文件夹，并取第一个结果赋值给 domainDir 变量
+
+if [ ! -d "$domainDir" ]; then
+    error "Could not find any directory containing '$DOMAIN'"
+    false
+    error "找不到任何包含 '$DOMAIN' 的文件夹"
+    # 如果 domainDir 变量为空或者不是一个目录，就报错并退出，并输出中文错误信息
 fi
 
-if [ ! -d "$ccPath/$REPO_NAME-$ver" ]; then
-  error "Could not find $REPO_NAME-$ver directory"
-  false
-  error "找不到文件夹: $REPO_NAME-$ver"
-  # 如果 ccPath 目录下没有 REPO_NAME-ver 目录，就报错并退出，并输出中文错误信息
+subDir=$(find "$domainDir" -mindepth 1 -maxdepth 1 -type d -name "*$DOMAIN*" | head -n 1)
+# 使用 find 命令在 domainDir 目录下寻找一级子目录中命名包含 $DOMAIN 字眼的文件夹，并取第一个结果赋值给 subDir 变量
+
+if [ ! -z "$subDir" ]; then
+    domainDir=$(basename "$subDir")
+    # 如果 subDir 变量不为空，就说明 domainDir 下一级有包含 $DOMAIN 字眼的文件夹，就将 subDir 的基本名赋值给 domainDir 变量
 fi
 
-cp -rf "$ccPath/$REPO_NAME-$ver/custom_components/$DOMAIN" "$ccPath"
-# 将 REPO_NAME-ver/custom_components/DOMAIN 目录复制到 ccPath 目录下
+if [ -d "$ccPath/$domainDir" ]; then
+    warn "custom_components/$domainDir directory already exist, cleaning up..."
+    rm -R "$ccPath/$domainDir"
+    # 如果 ccPath 目录下已经有 domainDir 目录，就输出警告信息，并删除该目录
+fi
+
+cp -rf "$tmpPath/$domainDir" "$ccPath"
+# 将 tmpPath/domainDir 目录复制到 ccPath 目录下
+
 
 info "Removing temp files..."
-rm -rf "$ccPath/$DOMAIN$ARCHIVE_TAG.zip"
-rm -rf "$ccPath/$REPO_NAME-$ver"
-# 删除临时文件，并输出信息
+rm -rf "$tmpPath/$ARCHIVE_TAG.zip"
+rm -rf "$tmpPath/$domainDir"
+rm -rf "$tmpPath"
+# 删除临时文件和临时文件夹，并输出信息
 
 info "Installation complete."
 info "安装成功！"
@@ -148,5 +149,3 @@ echo
 info "Remember to restart Home Assistant before you configure it."
 info "请重启 Home Assistant"
 # 输出重启 Home Assistant 的提示和中文提示
-
-
