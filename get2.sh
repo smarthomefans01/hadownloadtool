@@ -6,22 +6,22 @@
 set -e
 # 设置 -e 选项，如果脚本中出现错误，立即退出
 
-[ -z "$DOMAIN" ] && DOMAIN="hacs"
+DOMAIN=${DOMAIN:-hacs}
 # 如果没有指定 DOMAIN 参数，就默认为 hacs
 
-[ -z "$REPO_PATH" ] && REPO_PATH="hacs-china/integration"
+REPO_PATH=${REPO_PATH:-hacs-china/integration}
 # 如果没有指定 REPO_PATH 参数，就默认为 hacs-china/integration
 
 REPO_NAME=$(basename "$REPO_PATH")
 # 从 REPO_PATH 中提取仓库名，赋值给 REPO_NAME 变量
 
-[ -z "$ARCHIVE_TAG" ] && ARCHIVE_TAG="$1"
+ARCHIVE_TAG=${ARCHIVE_TAG:-$1}
 # 如果没有指定 ARCHIVE_TAG 参数，就使用第一个位置参数
 
-[ -z "$ARCHIVE_TAG" ] && ARCHIVE_TAG="master"
+ARCHIVE_TAG=${ARCHIVE_TAG:-master}
 # 如果还没有指定 ARCHIVE_TAG 参数，就默认为 master
 
-[ -z "$HUB_DOMAIN" ] && HUB_DOMAIN="github.com"
+HUB_DOMAIN=${HUB_DOMAIN:-github.com}
 # 如果没有指定 HUB_DOMAIN 参数，就默认为 github.com
 
 ARCHIVE_URL="https://$HUB_DOMAIN/$REPO_PATH/archive/$ARCHIVE_TAG.zip"
@@ -54,13 +54,19 @@ function warn () {
 function error () {
   echo "ERROR: $1"
   if [ "$2" != "false" ]; then
-    exit 1
+    if [ -d "$tmpPath" ]; then # 检查临时文件夹是否存在
+      info "Removing temp files..."
+      rm -rf "$tmpPath/$DOMAIN.zip"
+      rm -rf "$tmpPath/$domainDir"
+      rm -rf "$tmpPath"
+    fi
+    exit 1 # 删除临时文件夹后退出脚本
   fi
 }
 # 定义一个 error 函数，用于输出错误文字，并且根据第二个参数决定是否退出脚本
 
 function checkRequirement () {
-  if [ -z "$(command -v "$1")" ]; then
+  if ! command -v "$1" >/dev/null; then
     error "'$1' is not installed"
   fi
 }
@@ -104,7 +110,7 @@ wget -t 2 -O "$tmpPath/$DOMAIN.zip" "$ARCHIVE_URL"
 info "Unpacking..."
 # 输出解压缩的信息
 
-zipfile=$(find . -type f -name "*$DOMAIN*.zip" | head -n 1) # 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的压缩文件，并取第一个结果赋值给 zipfile 变量
+zipfile=$(find . -maxdepth 1 -type f -name "*$DOMAIN*.zip" | head -n 1) # 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的压缩文件，并取第一个结果赋值给 zipfile 变量
 
 if [ ! -f "$zipfile" ]; then # 如果 zipfile 变量为空或者不是一个文件，就报错并退出，并输出中文错误信息
     error "Could not find any zip file containing '$DOMAIN'"
@@ -112,11 +118,9 @@ if [ ! -f "$zipfile" ]; then # 如果 zipfile 变量为空或者不是一个文�
     error "找不到任何包含 '$DOMAIN' 的压缩文件"
 fi
 
+unzip -o "$zipfile" -d "$tmpPath" >/dev/null 2>&1 # 使用 unzip 命令解压 zipfile 文件到 tmpPath 目录，并忽略输出信息
 
-unzip -o "$zipfile" >/dev/null 2>&1 # 使用 unzip 命令解压 zipfile 文件，并忽略输出信息
-
-
-domainDir=$(find . -type d -name "*$DOMAIN*" | head -n 1)
+domainDir=$(find . -maxdepth 1 -type d -name "*$DOMAIN*" | head -n 1)
 # 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的文件夹，并取第一个结果赋值给 domainDir 变量
 
 if [ ! -d "$domainDir" ]; then
@@ -130,8 +134,7 @@ subDir=$(find "$domainDir" -mindepth 1 -maxdepth 1 -type d -name "*$DOMAIN*" | h
 # 使用 find 命令在 domainDir 目录下寻找一级子目录中命名包含 $DOMAIN 字眼的文件夹，并取第一个结果赋值给 subDir 变量
 
 if [ ! -z "$subDir" ]; then
-    domainDir=$(basename "$subDir")
-    # 如果 subDir 变量不为空，就说明 domainDir 下一级有包含 $DOMAIN 字眼的文件夹，就将 subDir 的基本名赋值给 domainDir 变量
+    domainDir=$(basename "$subDir") # 如果 subDir 变量不为空，就说明 domainDir 下一级有包含 $DOMAIN 字眼的文件夹，就将 subDir 的基本名赋值给 domainDir 变量
 fi
 
 if [ "$(basename "$domainDir")" != "$DOMAIN" ]; then
@@ -144,9 +147,8 @@ fi
 
 if [ -d "$ccPath/$domainDir" ]; then
     warn "custom_components/$domainDir directory already exist, cleaning up..."
-    rm -R "$ccPath/$domainDir/*"
-    rm -R "$ccPath/$domainDir"
-    # 如果 ccPath 目录下已经有 domainDir 目录，就输出警告信息，并删除该目录及其下面的所有文件和文件夹
+    rm -Rf "${ccPath:?}/$domainDir/"
+   # 如果 ccPath 目录下已经有 domainDir 目录，就输出警告信息，并删除该目录及其下面的所有文件和文件夹（使用 ${ccPath:?} 防止 ccPath 为空）
 fi
 
 cp -rf "$tmpPath/$domainDir" "$ccPath"
@@ -157,5 +159,7 @@ info "Removing temp files..."
 rm -rf "$tmpPath/$DOMAIN.zip"
 rm -rf "$tmpPath/$domainDir"
 rm -rf "$tmpPath"
-trap 'rm -rf -- "${tmpPath}"' EXIT # 删除临时文件夹即使脚本出错中断了也要删除这个临时文件夹才退出脚本。
-trap 'rm -- "${zipfile}"' EXIT # 删除临时文件即使脚本出错中断了也要删除
+# 删除临时文件夹及其下面的所有文件和文件夹
+
+info "Done!"
+# 输出完成的信息
