@@ -86,58 +86,57 @@ if [ ! -d "$ccPath" ]; then
   mkdir "$ccPath"
   # 如果 ccPath 目录不存在，就创建它，并输出信息
 fi
-
-info "Creating temp directory..."
-tmpDir=$(mktemp -d)
-cd "$tmpDir" || error "Could not change path to $tmpDir"
-# 创建一个临时目录，并切换到该目录下，并输出信息。如果失败就报错并退出。
-
+info "Changing to the custom_components directory..."
+cd "$ccPath" || error "Could not change path to $ccPath"
+# 切换到 ccPath 目录下，如果失败就报错并退出，并输出信息
 info "Downloading..."
-ARCHIVE_TAG=${ARCHIVE_TAG/%.zip/}
-# 去掉 ARCHIVE_TAG 中的 .zip 后缀
-wget -t 2 -O "$tmpDir/$DOMAIN$ARCHIVE_TAG.zip" "$ARCHIVE_URL"
-# 使用 wget 命令下载压缩包到临时目录下，并重命名为 $DOMAIN$ARCHIVE_TAG.zip，并输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
+wget -t 2 -O "$ccPath/$DOMAIN$ARCHIVE_TAG.zip" "$ARCHIVE_URL"
+# 使用 wget 命令下载压缩包到 ccPath 目录下，并重命名为 $DOMAIN$ARCHIVE_TAG.zip，并输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
 
-if [[ "$ARCHIVE_TAG" != "$REPO_NAME"* ]]; then
-  error "ARCHIVE_TAG does not match REPO_PATH"
+if [ -d "$ccPath/$DOMAIN" ]; then
+  warn "custom_components/$DOMAIN directory already exist, cleaning up..."
+  rm -R "$ccPath/$DOMAIN"
+  # 如果 ccPath 目录下已经有 DOMAIN 目录，就输出警告信息，并删除该目录
 fi
-# 如果 ARCHIVE_TAG 不是以 REPO_NAME 开头的，就报错并退出
-
-info "Unpacking..."
-unzip -o "$tmpDir/$DOMAIN$ARCHIVE_TAG.zip" >/dev/null 2>&1
-rm -f "$tmpDir/$DOMAIN$ARCHIVE_TAG.zip"
-# 解压缩压缩包，并删除压缩包文件，并忽略输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
 
 ver=${ARCHIVE_TAG/#v/}
 # 去掉 ARCHIVE_TAG 中的 v 前缀，赋值给 ver 变量
 
-if [ ! -d "$tmpDir/$REPO_NAME-$ver" ]; then
+if [ ! -d "$ccPath/$REPO_NAME-$ver" ]; then
   ver=$ARCHIVE_TAG
-  # 如果临时目录下没有 REPO_NAME-ver 目录，就将 ver 变量改为 ARCHIVE_TAG
+  # 如果 ccPath 目录下没有 REPO_NAME-ver 目录，就将 ver 变量改为 ARCHIVE_TAG
 fi
 
-info "Copying..."
-cd "$tmpDir/$REPO_NAME-$ver/custom_components/" || error "Could not change path to $tmpDir/$REPO_NAME-$ver/custom_components/"
-for dir in *; do
-  if [[ "$dir" == *"$DOMAIN"* ]]; then
-    if [ ! -d "$ccPath/$DOMAIN" ]; then
-      cp -rf "$dir" "$ccPath/$DOMAIN"
-      # 如果 ccPath 目录下没有 DOMAIN 目录，就直接复制该目录到 ccPath 目录下，并重命名为 DOMAIN 目录。
-    else
-      warn "custom_components/$DOMAIN directory already exist, cleaning up..."
-      rm -Rf "$ccPath/$DOMAIN"
-      cp -rf "$dir" "$ccPath/$DOMAIN"
-      # 如果 ccPath 目录下已经有 DOMAIN 目录，就输出警告信息，并删除该目录，然后复制该目录到 ccPath 目录下，并重命名为 DOMAIN 目录。
-    fi  
-    break  
-    # 找到含有 DOMAIN 字眼的目录后，就跳出循环。
-  fi  
-done  
+info "Unpacking..."
+# 输出解压缩的信息
+
+str="/releases/"
+# 定义一个 str 变量，存放 releases 字符串
+
+if [ ${ARCHIVE_URL/${str}/} = $ARCHIVE_URL ]; then
+  unzip -o "$ccPath/$DOMAIN$ARCHIVE_TAG.zip" -d "$ccPath" >/dev/null 2>&1
+  # 如果 ARCHIVE_URL 中没有 str 字符串，就说明是从 archive 目录下载的压缩包，就直接解压到 ccPath 目录下，并忽略输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
+else
+  dir="$ccPath/$REPO_NAME-$ver/custom_components/$DOMAIN"
+  mkdir -p $dir
+  unzip -o "$ccPath/$DOMAIN$ARCHIVE_TAG.zip" -d $dir >/dev/null 2>&1
+  # 否则说明是从 releases 目录下载的压缩包，就先创建一个目录结构，然后解压到该目录下，并忽略输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
+fi
+
+if [ ! -d "$ccPath/$REPO_NAME-$ver" ]; then
+  error "Could not find $REPO_NAME-$ver directory"
+  false
+  error "找不到文件夹: $REPO_NAME-$ver"
+  # 如果 ccPath 目录下没有 REPO_NAME-ver 目录，就报错并退出，并输出中文错误信息
+fi
+
+cp -rf "$ccPath/$REPO_NAME-$ver/custom_components/$DOMAIN" "$ccPath"
+# 将 REPO_NAME-ver/custom_components/DOMAIN 目录复制到 ccPath 目录下
 
 info "Removing temp files..."
-rm -rf "$tmpDir"
-cd ~ || error "Could not change path to home directory."
-# 删除临时文件和目录，并切换到主目录，并输出信息。如果失败就报错并退出。
+rm -rf "$ccPath/$DOMAIN$ARCHIVE_TAG.zip"
+rm -rf "$ccPath/$REPO_NAME-$ver"
+# 删除临时文件，并输出信息
 
 info "Installation complete."
 info "安装成功！"
