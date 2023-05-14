@@ -90,6 +90,8 @@ info "Changing to the custom_components directory..."
 cd "$ccPath" || error "Could not change path to $ccPath"
 # 切换到 ccPath 目录下，如果失败就报错并退出，并输出信息
 info "Downloading..."
+ARCHIVE_TAG=${ARCHIVE_TAG/%.zip/}
+# 去掉 ARCHIVE_TAG 中的 .zip 后缀
 wget -t 2 -O "$ccPath/$DOMAIN$ARCHIVE_TAG.zip" "$ARCHIVE_URL"
 # 使用 wget 命令下载压缩包到 ccPath 目录下，并重命名为 $DOMAIN$ARCHIVE_TAG.zip，并输出信息。把文件名改成 $DOMAIN$ARCHIVE_TAG.zip。
 
@@ -148,5 +150,3 @@ echo
 info "Remember to restart Home Assistant before you configure it."
 info "请重启 Home Assistant"
 # 输出重启 Home Assistant 的提示和中文提示
-
-
