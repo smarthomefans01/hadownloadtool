@@ -68,7 +68,8 @@ function checkRequirement () {
 
 checkRequirement "wget"
 checkRequirement "unzip"
-# 调用 checkRequirement 函数检查是否安装了 wget 和 unzip 命令
+checkRequirement "zipinfo"
+# 调用 checkRequirement 函数检查是否安装了 wget、unzip 和 zipinfo 命令
 
 info "Archive URL: $ARCHIVE_URL"
 info "Trying to find the correct directory..."
@@ -96,14 +97,24 @@ info "Changing to the temp directory..."
 cd "$tmpPath" || error "Could not change path to $tmpPath"
 # 切换到 tmpPath 目录下，如果失败就报错并退出，并输出信息
 info "Downloading..."
-wget -t 2 -O "$tmpPath/$ARCHIVE_TAG.zip" "$ARCHIVE_URL"
-# 使用 wget 命令下载压缩包到 tmpPath 目录下，并重命名为 ARCHIVE_TAG.zip，并输出信息
+wget -t 2 -O "$tmpPath/$DOMAIN.zip" "$ARCHIVE_URL"
+# 使用 wget 命令下载压缩包到 tmpPath 目录下，并重命名为 $DOMAIN.zip，并输出信息
+
 
 info "Unpacking..."
 # 输出解压缩的信息
 
-unzip -o "$tmpPath/$ARCHIVE_TAG.zip" -d "$tmpPath" >/dev/null 2>&1
-# 将压缩包解压到 tmpPath 目录下，并忽略输出信息
+zipfile=$(find . -type f -name "*$DOMAIN*.zip" | head -n 1) # 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的压缩文件，并取第一个结果赋值给 zipfile 变量
+
+if [ ! -f "$zipfile" ]; then # 如果 zipfile 变量为空或者不是一个文件，就报错并退出，并输出中文错误信息
+    error "Could not find any zip file containing '$DOMAIN'"
+    false
+    error "找不到任何包含 '$DOMAIN' 的压缩文件"
+fi
+
+
+unzip -o "$zipfile" >/dev/null 2>&1 # 使用 unzip 命令解压 zipfile 文件，并忽略输出信息
+
 
 domainDir=$(find . -type d -name "*$DOMAIN*" | head -n 1)
 # 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的文件夹，并取第一个结果赋值给 domainDir 变量
@@ -143,18 +154,8 @@ cp -rf "$tmpPath/$domainDir" "$ccPath"
 
 
 info "Removing temp files..."
-rm -rf "$tmpPath/$ARCHIVE_TAG.zip"
+rm -rf "$tmpPath/$DOMAIN.zip"
 rm -rf "$tmpPath/$domainDir"
 rm -rf "$tmpPath"
-# 删除临时文件和临时文件夹，并输出信息
-
-info "Installation complete."
-info "安装成功！"
-# 输出安装完成的信息和中文信息
-
-echo
-# 输出一个空行
-
-info "Remember to restart Home Assistant before you configure it."
-info "请重启 Home Assistant"
-# 输出重启 Home Assistant 的提示和中文提示
+trap 'rm -rf -- "${tmpPath}"' EXIT # 删除临时文件夹即使脚本出错中断了也要删除这个临时文件夹才退出脚本。
+trap 'rm -- "${zipfile}"' EXIT # 删除临时文件即使脚本出错中断了也要删除
