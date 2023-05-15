@@ -7,8 +7,9 @@
 set -euo pipefail
 # 设置 -euo pipefail 选项，可以更安全地处理错误和未定义的变量
 
-[ -z "$DOMAIN" ] && DOMAIN="hacs"
-# 如果没有指定 DOMAIN 参数，就默认为 hacs
+[ -z "$DOMAIN" ] && DOMAIN="integration-master"
+# 如果没有指定 DOMAIN 参数，就默认为 integration-master，
+# 注意这个参数要和压缩包中的文件夹名一致
 
 [ -z "$REPO_PATH" ] && REPO_PATH="hacs-china/integration"
 # 如果没有指定 REPO_PATH 参数，就默认为 hacs-china/integration
@@ -165,4 +166,4 @@ fi
 if [ -d "$ccPath/$domainDir" ]; then 
     warn "custom_components/$domainDir directory already exist, cleaning up..." 
     rm -R "$ccPath/$domainDir/*" 
-    rm -R "$ccPath/$domain
+    rm -R "$ccPath
