@@ -13,9 +13,6 @@ set -euo pipefail
 [ -z "$REPO_PATH" ] && REPO_PATH="hacs-china/integration"
 # 如果没有指定 REPO_PATH 参数，就默认为 hacs-china/integration
 
-REPO_NAME=$(basename "$REPO_PATH")
-# 从 REPO_PATH 中提取仓库名，赋值给 REPO_NAME 变量
-
 [ -z "$ARCHIVE_TAG" ] && ARCHIVE_TAG="$1"
 # 如果没有指定 ARCHIVE_TAG 参数，就使用第一个位置参数
 
@@ -25,15 +22,12 @@ REPO_NAME=$(basename "$REPO_PATH")
 [ -z "$HUB_DOMAIN" ] && HUB_DOMAIN="github.com"
 # 如果没有指定 HUB_DOMAIN 参数，就默认为 github.com
 
-ARCHIVE_URL="https://$HUB_DOMAIN/$REPO_PATH/archive/$ARCHIVE_TAG.zip"
-# 拼接压缩包的下载地址，赋值给 ARCHIVE_URL 变量
-
 if [ "$ARCHIVE_TAG" = "latest" ]; then
     ARCHIVE_URL="https://$HUB_DOMAIN/$REPO_PATH/releases/$ARCHIVE_TAG/download/$DOMAIN.zip"
 fi
 # 如果 ARCHIVE_TAG 等于 latest，就使用 releases 目录下的压缩包地址
 
-if [ "$DOMAIN" = "hacs" ]; then
+if [[ "$DOMAIN" =~ ^hacs ]]; then
     if [ "$ARCHIVE_TAG" = "main" ] || [ "$ARCHIVE_TAG" = "china" ] || [ "$ARCHIVE_TAG" = "master" ]; then
         ARCHIVE_TAG="latest"
     fi
@@ -41,6 +35,10 @@ if [ "$DOMAIN" = "hacs" ]; then
     ARCHIVE_URL="https://$HUB_DOMAIN/$REPO_PATH/releases/$ARCHIVE_TAG/download/$DOMAIN.zip"
     # 使用 releases 目录下的压缩包地址
 fi
+
+ARCHIVE_URL="https://$HUB_DOMAIN/$REPO_PATH/archive/$ARCHIVE_TAG.zip"
+# 拼接压缩包的下载地址，赋值给 ARCHIVE_URL 变量，
+# 注意将这一行放在最后，以免被覆盖。
 
 function info () {
     echo "INFO: $1"
@@ -118,9 +116,10 @@ wget -t 2 -O "$tmpPath/$DOMAIN.zip" "$ARCHIVE_URL"
 info "Unpacking..."
 # 输出解压缩的信息
 
-zipfile=$(find . -maxdepth 1 -type f -
-name "*$DOMAIN*.zip" | head -n 1)
-# 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的压缩文件，并取第一个结果赋值给 zipfile 变量
+zipfile=$(find . -maxdepth 1 -type f --name "$DOMAIN.zip" | head -n 1)
+# 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的压缩文件，并取第一个结果赋值给 zipfile 变量，
+# 注意去掉了 name 选项前的空格，并且使用了 --name 选项，
+# 并且只匹配和 DOMAIN 参数完全相同的压缩文件。
 
 if [ ! -f "$zipfile" ]; then
     # 如果 zipfile 变量为空或者不是一个文件，就报错并退出，并输出中文错误信息
