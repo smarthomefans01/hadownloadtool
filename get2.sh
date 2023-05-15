@@ -116,9 +116,9 @@ wget -t 2 -O "$tmpPath/$DOMAIN.zip" "$ARCHIVE_URL"
 info "Unpacking..."
 # 输出解压缩的信息
 
-zipfile=$(find . -maxdepth 1 -type f --name "$DOMAIN.zip" | head -n 1)
+zipfile=$(find . -maxdepth 1 -type f -name "$DOMAIN.zip" | head -n 1)
 # 使用 find 命令在当前目录下寻找命名包含 $DOMAIN 字眼的压缩文件，并取第一个结果赋值给 zipfile 变量，
-# 注意去掉了 name 选项前的空格，并且使用了 --name 选项，
+# 注意去掉了 name 选项前的空格，
 # 并且只匹配和 DOMAIN 参数完全相同的压缩文件。
 
 if [ ! -f "$zipfile" ]; then
@@ -165,18 +165,4 @@ fi
 if [ -d "$ccPath/$domainDir" ]; then 
     warn "custom_components/$domainDir directory already exist, cleaning up..." 
     rm -R "$ccPath/$domainDir/*" 
-    rm -R "$ccPath/$domainDir" 
-    # 如果 ccPath 目录下已经有 domainDir 目录，就输出警告信息，并删除该目录及其下面的所有文件和文件夹
-    
-fi
-
-
-cp -rf "$tmpPath/$domainDir" "$ccPath"
-# 将 tmpPath/domainDir 目录复制到 ccPath 目录下
-
-
-info "Removing temp files..."
-rm -rf "$tmpPath/$DOMAIN.zip"
-rm -rf "$tmpPath/$domainDir"
-rm -rf "$tmpPath"
-
+    rm -R "$ccPath/$domain
