@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+trap 'rm -rf "$tmpPath"' EXIT
 
 [ -z "$DOMAIN" ] && DOMAIN="hacs"
 [ -z "$REPO_PATH" ] && REPO_PATH="hacs-china/integration"
@@ -38,8 +39,8 @@ function error () {
   if [ "$2" != "false" ]; then
     if [ -d "$tmpPath" ]; then
       info "Removing temp files..."
-      rm -rf "$tmpPath/$DOMAIN.zip"
-      rm -rf "$tmpPath/$domainDir"
+      [ -f "$tmpPath/$DOMAIN.zip" ] && rm -rf "$tmpPath/$DOMAIN.zip"
+      [ -f "$tmpPath/$domainDir" ] && rm -rf "$tmpPath/$domainDir"
       rm -rf "$tmpPath"
     fi
     exit 1
@@ -68,10 +69,7 @@ fi
 
 tmpPath="/tmp/hatmp"
 
-if [ ! -d "$tmpPath" ]; then
-    info "Creating temp directory..."
-    mkdir "$tmpPath"
-fi
+[ -d "$tmpPath" ] || mkdir "$tmpPath"
 
 info "Changing to the temp directory..."
 cd "$tmpPath" || error "Could not change path to $tmpPath"
@@ -95,7 +93,7 @@ for domainDir in $domainDirs; do
 done
 
 if [ -z "$finalDir" ]; then
-    error "Could not find any directory named '$DOMAIN' containing 'manifest.json' and no '$DOMAIN'    named sub-directory"
+    error "Could not find any directory named '$DOMAIN' containing 'manifest.json' and no '$DOMAIN' named sub-directory"
     false
     error "找不到包含 'manifest.json' 的 '$DOMAIN' 命名目录，且没有 '$DOMAIN' 命名子目录"
 fi
@@ -106,12 +104,12 @@ info "Removing old version..."
 rm -rf "$ccPath/$DOMAIN"
 
 info "Copying new version..."
-cp -R "$finalDir" "$ccPath/$DOMAIN"
+[ -d "$ccPath/$DOMAIN" ] || mkdir "$ccPath/$DOMAIN"
+cp -R "$finalDir/"* "$ccPath/$DOMAIN/"
 
 info "Removing temp files..."
-rm -rf "$tmpPath/$DOMAIN.zip"
-rm -rf "$tmpPath/$REPO_NAME-$ARCHIVE_TAG"
+[ -f "$tmpPath/$DOMAIN.zip" ] && rm -rf "$tmpPath/$DOMAIN.zip"
+[ -f "$tmpPath/$REPO_NAME-$ARCHIVE_TAG" ] && rm -rf "$tmpPath/$REPO_NAME-$ARCHIVE_TAG"
 rm -rf "$tmpPath"
 
 info "Done."
-
