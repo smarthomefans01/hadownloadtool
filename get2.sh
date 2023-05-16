@@ -40,7 +40,7 @@ function error () {
     if [ -d "$tmpPath" ]; then
       info "Removing temp files..."
       [ -f "$tmpPath/$DOMAIN.zip" ] && rm -rf "$tmpPath/$DOMAIN.zip"
-      [ -f "$tmpPath/$domainDir" ] && rm -rf "$tmpPath/$domainDir"
+      [ -d "$tmpDir" ] && rm -rf "$tmpDir"
       rm -rf "$tmpPath"
     fi
     exit 1
@@ -109,7 +109,8 @@ cp -R "$finalDir/"* "$ccPath/$DOMAIN/"
 
 info "Removing temp files..."
 [ -f "$tmpPath/$DOMAIN.zip" ] && rm -rf "$tmpPath/$DOMAIN.zip"
-[ -f "$tmpPath/$REPO_NAME-$ARCHIVE_TAG" ] && rm -rf "$tmpPath/$REPO_NAME-$ARCHIVE_TAG"
+tmpDir=$(find "$tmpPath/"*"$REPO_NAME-$ARCHIVE_TAG"* | head -n 1)
+[ -d "$tmpDir" ] && rm -rf "$tmpDir"
 rm -rf "$tmpPath"
 
 info "Done."
