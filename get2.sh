@@ -5,7 +5,7 @@ set -e
 # 把tmpPath变量的定义位置提前了
 tmpPath="/tmp/hatmp"
 
-trap 'rm -rf "$tmpPath"' EXIT
+trap '[ -n "$tmpPath" ] && rm -rf "$tmpPath"' EXIT
 
 [ -z "$DOMAIN" ] && DOMAIN="hacs"
 [ -z "$REPO_PATH" ] && REPO_PATH="hacs-china/integration"
