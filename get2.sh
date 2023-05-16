@@ -27,18 +27,18 @@ if [ "$DOMAIN" = "hacs" ]; then
 fi
 
 function info () {
-  echo "INFO: $1"
+  echo "信息: $1"
 }
 
 function warn () {
-  echo "WARN: $1"
+  echo "警告: $1"
 }
 
 function error () {
-  echo "ERROR: $1"
+  echo "错误: $1"
   if [ "$2" != "false" ]; then
     if [ -d "$tmpPath" ]; then
-      info "Removing temp files..."
+      info "删除临时文件..."
       [ -f "$tmpPath/$DOMAIN.zip" ] && rm -rf "$tmpPath/$DOMAIN.zip"
       [ -d "$tmpDir" ] && rm -rf "$tmpDir"
       rm -rf "$tmpPath"
@@ -49,7 +49,7 @@ function error () {
 
 function checkRequirement () {
   if [ -z "$(command -v "$1")" ]; then
-    error "'$1' is not installed"
+    error "'$1' 没有安装"
   fi
 }
 
@@ -58,13 +58,13 @@ checkRequirement "unzip"
 checkRequirement "find"
 checkRequirement "jq"
 
-info "Archive URL: $ARCHIVE_URL"
-info "Trying to find the correct directory..."
+info "压缩包地址: $ARCHIVE_URL"
+info "尝试找到正确的目录..."
 
 ccPath="/usr/share/hassio/homeassistant/custom_components"
 
 if [ ! -d "$ccPath" ]; then
-    info "Creating custom_components directory..."
+    info "创建 custom_components 目录..."
     mkdir "$ccPath"
 fi
 
@@ -72,13 +72,13 @@ tmpPath="/tmp/hatmp"
 
 [ -d "$tmpPath" ] || mkdir "$tmpPath"
 
-info "Changing to the temp directory..."
-cd "$tmpPath" || error "Could not change path to $tmpPath"
+info "切换到临时目录..."
+cd "$tmpPath" || error "无法切换到 $tmpPath 目录"
 
-info "Downloading..."
+info "下载..."
 wget -t 2 -O "$tmpPath/$DOMAIN.zip" "$ARCHIVE_URL"
 
-info "Unpacking..."
+info "解压..."
 unzip -o "$tmpPath/$DOMAIN.zip" -d "$tmpPath" >/dev/null 2>&1
 
 domainDirs=$(find "$tmpPath" -type d -name "$DOMAIN")
@@ -94,33 +94,33 @@ for domainDir in $domainDirs; do
 done
 
 if [ -z "$finalDir" ]; then
-    error "Could not find any directory named '$DOMAIN' containing 'manifest.json' and no '$DOMAIN' named sub-directory"
+    error "找不到包含 'manifest.json' 的 '$DOMAIN' 命名目录，且没有 '$DOMAIN' 命名子目录"
     false
     error "找不到包含 'manifest.json' 的 '$DOMAIN' 命名目录，且没有 '$DOMAIN' 命名子目录"
 fi
 
-info "Found correct directory: $finalDir"
+info "找到正确的目录: $finalDir"
 
-info "Removing old version..."
+info "删除旧版本..."
 rm -rf "$ccPath/$DOMAIN"
 
-info "Copying new version..."
+info "复制新版本..."
 [ -d "$ccPath/$DOMAIN" ] || mkdir "$ccPath/$DOMAIN"
 cp -R "$finalDir/"* "$ccPath/$DOMAIN/"
 
 # 新增的功能，检查目标文件夹里面的manifest.json文件，提取它里面的version字段的信息，如果这个字段的信息等于"$ARCHIVE_TAG"，那么就表示更新成功了。
-info "Checking version..."
+info "检查版本..."
 version=$(jq '.version' <"$ccPath/$DOMAIN/manifest.json")
 if [ "${version//\"}" = "${ARCHIVE_TAG//v}" ]; then
-    info "Update successful."
+    info "更新成功。"
 else
-    warn "Update failed. Version mismatch."
+    warn "更新失败。版本不匹配。"
 fi
 
-info "Removing temp files..."
+info "删除临时文件..."
 [ -f "$tmpPath/$DOMAIN.zip" ] && rm -rf "$tmpPath/$DOMAIN.zip"
 tmpDir=$(find "$tmpPath/"*"$REPO_NAME-$ARCHIVE_TAG"* | head -n 1)
 [ -d "$tmpDir" ] && rm -rf "$tmpDir"
 rm -rf "$tmpPath"
 
-info "Done."
+info "完成。"
