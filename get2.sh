@@ -56,6 +56,7 @@ function checkRequirement () {
 checkRequirement "wget"
 checkRequirement "unzip"
 checkRequirement "find"
+checkRequirement "jq"
 
 info "Archive URL: $ARCHIVE_URL"
 info "Trying to find the correct directory..."
@@ -106,6 +107,15 @@ rm -rf "$ccPath/$DOMAIN"
 info "Copying new version..."
 [ -d "$ccPath/$DOMAIN" ] || mkdir "$ccPath/$DOMAIN"
 cp -R "$finalDir/"* "$ccPath/$DOMAIN/"
+
+# 新增的功能，检查目标文件夹里面的manifest.json文件，提取它里面的version字段的信息，如果这个字段的信息等于"$ARCHIVE_TAG"，那么就表示更新成功了。
+info "Checking version..."
+version=$(jq '.version' <"$ccPath/$DOMAIN/manifest.json")
+if [ "${version//\"}" = "${ARCHIVE_TAG//v}" ]; then
+    info "Update successful."
+else
+    warn "Update failed. Version mismatch."
+fi
 
 info "Removing temp files..."
 [ -f "$tmpPath/$DOMAIN.zip" ] && rm -rf "$tmpPath/$DOMAIN.zip"
