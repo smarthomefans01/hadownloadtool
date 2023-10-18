@@ -2,15 +2,60 @@
 
 set -e
 
+# 检查并安装必要的工具
+check_and_install() {
+    for tool in "$@"; do
+        if ! command -v "$tool" &>/dev/null; then
+            echo "$tool 没有被安装，正在自动安装..."
+            if [[ $EUID -ne 0 ]]; then
+                echo "请使用 sudo 权限重新运行此脚本以安装 $tool."
+                exit 1
+            else
+                apt-get update
+                apt-get install -y "$tool"
+            fi
+        fi
+    done
+}
+
+# 检查并安装 curl 和 jq
+check_and_install curl jq
+
+# 提示用户输入GitHub仓库地址
+read -p "请输入第三方集成在GitHub的仓库地址: " repo_url
+
+# 从URL中提取GitHub仓库的full_name
+full_name="${repo_url#*github.com/}"
+full_name="${full_name%.git}"
+
+# 输出仓库信息
+echo "REPO_PATH=$full_name"
+
+# 使用curl获取JSON数据，并使用jq查找对应的full_name
+data=$(curl -s "https://data-v2.hacs.xyz/integration/data.json" | jq -r --arg FULL_NAME "$full_name" '.[] | select(.full_name == $FULL_NAME)')
+
+# 如果没有找到对应的数据，输出错误信息并退出
+if [ -z "$data" ]; then
+    echo "未找到对应的集成信息"
+    exit 1
+fi
+
+# 使用jq从JSON数据中提取domain和last_version
+DOMAIN=$(echo "$data" | jq -r '.domain')
+ARCHIVE_TAG=$(echo "$data" | jq -r '.last_version')
+REPO_PATH=$full_name
+
 # 把tmpPath变量的定义位置提前了
 tmpPath="/tmp/hatmp"
-
 trap 'rm -rf "$tmpPath"' EXIT
+
+HUB_DOMAIN="ghproxy.com/github.com"
+
+REPO_NAME=$(basename "$REPO_PATH")
 
 [ -z "$DOMAIN" ] && DOMAIN="hacs"
 [ -z "$REPO_PATH" ] && REPO_PATH="hacs-china/integration"
 
-REPO_NAME=$(basename "$REPO_PATH")
 
 [ -z "$ARCHIVE_TAG" ] && ARCHIVE_TAG="$1"
 [ -z "$ARCHIVE_TAG" ] && ARCHIVE_TAG="master"
