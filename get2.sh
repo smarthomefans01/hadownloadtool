@@ -49,7 +49,7 @@ REPO_PATH=$full_name
 tmpPath="/tmp/hatmp"
 trap 'rm -rf "$tmpPath"' EXIT
 
-HUB_DOMAIN="ghproxy.com/github.com"
+HUB_DOMAIN="gh.api.99988866.xyz/https://github.com"
 
 REPO_NAME=$(basename "$REPO_PATH")
 
