@@ -6,7 +6,7 @@ on:
     branches:
       - main  # 或者您的默认分支名
   schedule:
-    - cron: '*/1 * * * *'  # 每分钟执行一次
+    - cron: '*/10 * * * *'  # 每分钟执行一次
 
 jobs:
   sync:
