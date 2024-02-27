@@ -1,0 +1,24 @@
+name: Sync JSON File
+
+on:
+  schedule:
+    - cron: '* * * * *'  # 每分钟执行一次
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Download JSON File
+      run: curl -o data.json https://data-v2.hacs.xyz/integration/data.json
+
+    - name: Commit and Push
+      run: |
+        git config --global user.email "smarthomefans01@hotmail.com"
+        git config --global user.name "smarthomefans01"
+        git add data.json
+        git commit -m "Update data.json"
+        git push
