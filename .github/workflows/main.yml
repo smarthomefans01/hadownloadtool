@@ -2,7 +2,7 @@ name: Sync JSON File
 
 on:
   schedule:
-    - cron: '* * * * *'  # 每分钟执行一次
+    - cron: '*/10 * * * *'  # 每分钟执行一次
 
 jobs:
   sync:
