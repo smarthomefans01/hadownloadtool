@@ -11,8 +11,8 @@ check_and_install() {
                 echo "请使用 sudo 权限重新运行此脚本以安装 $tool."
                 exit 1
             else
-                apt-get update
-                apt-get install -y "$tool"
+                sudo apt-get update
+                sudo apt-get install -y "$tool"
             fi
         fi
     done
