@@ -21,8 +21,71 @@ check_and_install() {
 # 检查并安装 curl 和 jq
 check_and_install curl jq
 
-# 提示用户输入GitHub仓库地址
-read -p "请输入第三方集成在GitHub的仓库地址: " repo_url
+echo "国内常见的插件下载："
+echo "1. 插件名称：xiaomi miot auto；简介：处理米家wifi设备和所有米家设备云端对接。仓库地址：https://github.com/al-one/hass-xiaomi-miot"
+echo "2. 插件名称：XiaomiGateway3；简介：处理米家蓝牙设备和部分zigbee设备对接。仓库地址：https://github.com/AlexxIT/XiaomiGateway3"
+echo "3. 插件名称：AqaraGateway；简介：处理绿米网关设备对接；仓库地址：https://github.com/niceboygithub/AqaraGateway"
+echo "4. 插件名称：SonoffLAN；简介：处理易微联设备对接；仓库地址：https://github.com/AlexxIT/SonoffLAN"
+echo "5. 插件名称：Deebot-4-Home-Assistant；简介：处理科沃斯扫地机器人对接。仓库地址：https://github.com/DeebotUniverse/Deebot-4-Home-Assistant"
+echo "6. 插件名称：localtuya；简介：涂鸦Wi-Fi设备本地对接；仓库地址：https://github.com/rospogrigio/localtuya"
+echo "7. 插件名称：dreame-vacuum；简介：追觅扫地机或者吸尘器对接；仓库地址：https://github.com/Tasshack/dreame-vacuum"
+echo "8. 插件名称：dahua；简介：大华摄像头和门铃对接。仓库地址：https://github.com/rroller/dahua"
+echo "9. 插件名称：ha-tplink-deco；简介：tplink-deco设备对接。仓库地址：https://github.com/amosyuen/ha-tplink-deco"
+echo "10. 插件名称：midea_ac_lan；简介：美的设备对接；仓库地址：https://github.com/georgezhao2010/midea_ac_lan"
+
+echo "请输入您选择的插件序号，或者输入 0 来输入自定义的GitHub仓库地址："
+read choice
+
+case $choice in
+    1)
+        repo_url="https://github.com/al-one/hass-xiaomi-miot"
+        ;;
+    2)
+        repo_url="https://github.com/AlexxIT/XiaomiGateway3"
+        ;;
+    3)
+        repo_url="https://github.com/niceboygithub/AqaraGateway"
+        ;;
+    4)
+        repo_url="https://github.com/AlexxIT/SonoffLAN"
+        ;;
+    5)
+        repo_url="https://github.com/DeebotUniverse/Deebot-4-Home-Assistant"
+        ;;
+    6)
+        repo_url="https://github.com/rospogrigio/localtuya"
+        ;;
+    7)
+        repo_url="https://github.com/Tasshack/dreame-vacuum"
+        ;;
+    8)
+        repo_url="https://github.com/rroller/dahua"
+        ;;
+    9)
+        repo_url="https://github.com/amosyuen/ha-tplink-deco"
+        ;;
+    10)
+        repo_url="https://github.com/georgezhao2010/midea_ac_lan"
+        ;;
+    0)
+        read -p "请输入自定义的GitHub仓库地址: " repo_url
+        ;;
+    *)
+        echo "无效的输入。"
+        exit 1
+        ;;
+esac
+
+echo "选择的GitHub仓库地址是：$repo_url"
+
+# 从URL中提取GitHub仓库的full_name
+full_name="${repo_url#*github.com/}"
+full_name="${full_name%.git}"
+
+# 输出仓库信息
+echo "REPO_PATH=$full_name"
+
+
 
 # 从URL中提取GitHub仓库的full_name
 full_name="${repo_url#*github.com/}"
