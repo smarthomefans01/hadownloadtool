@@ -179,7 +179,7 @@ fi
 
 # 在检查更新是否成功时，脚本使用了jq来解析manifest.json文件中的版本信息。然而，如果manifest.json文件不存在或不包含version字段，jq命令可能会失败，但脚本并未对此进行处理。
 # 修改为：在使用jq命令之前，先检查manifest.json文件是否存在，并且是否包含version字段。如果不存在或不包含，则给出相应的警告，并跳过检查更新是否成功的步骤。
-if [ ! -f "$ccPath/$DOMAIN/manifest.json"]; then # 检查manifest.json文件是否存在
+if [ ! -f "$ccPath/$DOMAIN/manifest.json" ]; then # 检查manifest.json文件是否存在
     warn "manifest.json文件不存在，请检查是否下载和解压正确。跳过检查更新是否成功。"
 elif ! jq '.version' <"$ccPath/$DOMAIN/manifest.json"; then # 检查manifest.json文件是否包含version字段
     warn "manifest.json文件不包含version字段，请检查是否下载和解压正确。跳过检查更新是否成功。"
@@ -192,5 +192,6 @@ else # 如果存在并且包含，则进行检查更新是否成功的步骤。
         warn "更新失败。版本不匹配。期望版本为：${ARCHIVE_TAG//v}，实际版本为：${version//\"}"
     fi
 fi
+
 
 # 最后，脚本在完成后删除临时文件，但如果脚本在此之前的某个地方失败并退出，这些临时文件可能不会被删除。你
