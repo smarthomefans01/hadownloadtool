@@ -32,7 +32,7 @@ full_name="${full_name%.git}"
 echo "REPO_PATH=$full_name"
 
 # 使用curl获取JSON数据，并使用jq查找对应的full_name
-data=$(curl -s "https://data-v2.hacs.xyz/integration/data.json" | jq -r --arg FULL_NAME "$full_name" '.[] | select(.full_name == $FULL_NAME)')
+data=$(curl -s "https://cdn.jsdelivr.net/gh/smarthomefans01/hadownloadtool@main/data.json" | jq -r --arg FULL_NAME "$full_name" '.[] | select(.full_name == $FULL_NAME)')
 
 # 如果没有找到对应的数据，输出错误信息并退出
 if [ -z "$data" ]; then
